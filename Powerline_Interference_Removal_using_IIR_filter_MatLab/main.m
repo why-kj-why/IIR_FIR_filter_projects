@@ -1,0 +1,64 @@
+clc;
+clearvars;
+close all;
+
+% input ECG signal
+dir = "ECG.txt";
+
+ecg = load(dir);
+N = length(ecg);
+
+% specifications of the digital IIR filter
+disp("TYPES OF IIR FILTERS");
+disp("1. BUTTERWORTH FILTER");
+disp("2. CHEBYSHEV - 1 FILTER");
+disp("3. CHEBYSHEV - 2 FILTER");
+disp("4. ELLIPTIC FILTER");
+
+iir = input("\nCHOOSE THE FILTER : ");
+if iir > 4
+    disp("INVALID INPUT!");
+    return
+end
+
+order = input("FILTER ORDER : ");
+lowerFc = input("LOWER CUTOFF FREQUENCY : ");
+higherFc = input("HIGHER CUTOFF FREQUENCY : ");
+
+% designing the IIR filter
+switch(iir)
+    case 1
+        [b, a] = butter(order/2, [lowerFc, higherFc], "stop");
+    case 2
+        passbandRipple = input("PASSBAND RIPPLE : ");
+        [b, a] = cheby1(order/2, passbandRipple, [lowerFc, higherFc], "stop");
+    case 3
+        stopbandAttenuation = input("STOPBAND ATTENUATION : ");
+        [b, a] = cheby2(order/2, stopbandAttenuation, [lowerFc, higherFc], "stop");
+    case 4
+        passbandRipple = input("PASSBAND RIPPLE : ");
+        stopbandAttenuation = input("STOPBAND ATTENUATION : ");
+        [b, a] = ellip(order/2, passbandRipple, stopbandAttenuation, [lowerFc, higherFc], "stop");
+end
+
+% spectral analysis of the IIR filter
+[H, w] = freqz(b, a, N);
+norm_H = abs(H)./max(abs(H));
+norm_w = w./(2*pi);
+subplot(1, 2, 1);
+plot(norm_w, 20*log10(norm_H));
+title("SPECTRAL ANALYSIS");
+xlabel("NORMALISED ANGULAR FREQUENCY");
+ylabel("NORMALISED FREQUENCY RESPONSE");
+
+% eliminating noise from the signal
+filtered_ecg = filter(b, a, ecg);
+
+subplot(1, 2, 2);
+plot(ecg);
+hold on;
+plot(filtered_ecg);
+title("ECG SIGNAL");
+ylabel("AMPLITUDE");
+xlabel("SAMPLES");
+legend("NOISY ECG SIGNAL", "FILTERED ECG SIGNAL");
